@@ -53,23 +53,30 @@ def evolve(world):
     return new_world
 
 
-def render_matrix(cells):
-    if len(cells) == 0:
+def render_matrix(world, anchor='min'):
+    """
+    """
+    if len(world) == 0:
         return np.array([[0]])
-    def min_index(cells, index):
-        return min(cells, key=itemgetter(index))[index]
 
-    mins = map(partial(min_index, cells), range(2))
+    if anchor == 'min':
+        xs, ys = zip(*world)
+        def min_index(world, index):
+            return min(world, key=itemgetter(index))[index]
 
-    xs, ys = zip(*cells)
+        mins = map(partial(min_index, world), range(2))
 
-    xs, ys = map(
-        lambda (min_k, ks):\
-            map(neg, map(partial(sub, min_k), ks)),
-        zip(mins, [xs, ys])
-    )
+        xs, ys = map(
+            lambda (min_k, ks):\
+                map(neg, map(partial(sub, min_k), ks)),
+            zip(mins, [xs, ys])
+        )
+
+    elif anchor == 'origo':
+        xs, ys = zip(*filter(lambda (x, y): x>0 and y>0, world))
+
     matrix_representation = sparse.coo_matrix(
-        ([1,] * len(cells), (xs, ys))
+        ([1,] * len(world), (xs, ys))
     ).todense()
 
     return matrix_representation
@@ -91,16 +98,19 @@ diehard = {
 }
 
 
-def render(world):
-    view = render_matrix(world)
+def render(world, anchor='min'):
+    """
+    world : {(x, y)}
+    """
+    view = render_matrix(world, anchor)
     pl.clf()
     pl.imshow(view, interpolation='nearest')
     pl.axis([0, 15, 0, 15])
     pl.draw()
     pl.show()
-    sleep(0.1)
+    sleep(0.01)
     render(evolve(world))
 
 pl.ion()
 
-render(diehard)
+render(diehard, anchor='origo')
